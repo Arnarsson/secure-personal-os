@@ -31,8 +31,9 @@ import subprocess
 import atexit
 
 
-# Configure logging early
-pos_config.ensure_dirs()
+# Configure logging early (skip FS writes in demo environments like Vercel)
+if not pos_config.is_demo_mode():
+    pos_config.ensure_dirs()
 log = logging.getLogger("PersonalOS_Web")
 log.setLevel(logging.INFO)
 if not any(isinstance(h, logging.StreamHandler) for h in log.handlers):
@@ -68,6 +69,9 @@ def create_app() -> FastAPI:
         )
     app.state.web_token = configured_token
 
+    # Demo mode disables stateful or long-running features (enabled on Vercel)
+    app.state.demo = pos_config.is_demo_mode()
+
     def _require_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
         """Simple bearer token check via Authorization header (Bearer)."""
         expected = app.state.web_token
@@ -77,6 +81,12 @@ def create_app() -> FastAPI:
         if not token_ok:
             raise HTTPException(status_code=401, detail="unauthorized")
         return True
+
+    def _maybe_require_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+        """Skip token requirement in demo mode for read-only endpoints."""
+        if app.state.demo:
+            return True
+        return _require_token(credentials)
 
     # Single orchestrator instance per process
     app.state.secure_os = SecurePersonalOS()
@@ -121,6 +131,9 @@ def create_app() -> FastAPI:
     # Startup/shutdown hooks
     @app.on_event("startup")
     async def _maybe_autostart_playwright():
+        if app.state.demo:
+            # Never autostart processes in demo
+            return
         if os.getenv("PERSONAL_OS_AUTOSTART_PLAYWRIGHT", "").lower() in {"1", "true", "yes"}:
             res = _start_playwright()
             if not res.get("ok"):
@@ -140,8 +153,16 @@ def create_app() -> FastAPI:
     async def index(request: Request):
         return templates.TemplateResponse(
             "index.html",
-            {"request": request},
+            {"request": request, "demo": app.state.demo},
         )
+
+    @app.get("/api/info")
+    async def info() -> Dict[str, Any]:
+        return {
+            "demo": app.state.demo,
+            "tokenConfigured": bool(os.getenv("PERSONAL_OS_WEB_TOKEN")),
+            "version": app.version if hasattr(app, "version") else "1.0",
+        }
 
     @app.post("/api/login")
     async def login(payload: Dict[str, Any]):
@@ -159,7 +180,7 @@ def create_app() -> FastAPI:
         return {"configured": env_set, "token": None if env_set else app.state.web_token}
 
     @app.get("/api/status")
-    async def status(_: bool = Depends(_require_token)):
+    async def status(_: bool = Depends(_maybe_require_token)):
         try:
             return app.state.secure_os.get_system_status()
         except Exception as e:
@@ -167,6 +188,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/session/init")
     async def session_init(payload: Dict[str, Any], _: bool = Depends(_require_token)):
+        if app.state.demo:
+            raise HTTPException(status_code=503, detail="session/init disabled in demo mode")
         master_password = payload.get("master_password")
         if not master_password:
             raise HTTPException(status_code=400, detail="master_password required")
@@ -175,21 +198,38 @@ def create_app() -> FastAPI:
 
     @app.post("/api/session/close")
     async def session_close(_: bool = Depends(_require_token)):
+        if app.state.demo:
+            raise HTTPException(status_code=503, detail="session/close disabled in demo mode")
         ok, msg = await app.state.secure_os.close_session()
         return {"ok": ok, "message": msg}
 
     @app.post("/api/auth")
     async def auth(payload: Dict[str, Any], _: bool = Depends(_require_token)):
+        if app.state.demo:
+            raise HTTPException(status_code=503, detail="auth disabled in demo mode")
         # payload example: {"gmail": {...}, "calendar": {...}, "whatsapp": {...}}
         results = await app.state.secure_os.authenticate_services(payload or {})
         return results
 
     @app.get("/api/briefing")
-    async def briefing(_: bool = Depends(_require_token)):
+    async def briefing(_: bool = Depends(_maybe_require_token)):
+        if app.state.demo:
+            # Return a static, safe demo response
+            return {
+                "summary": "Demo daily briefing",
+                "gmail_unread": 0,
+                "calendar_today": [],
+                "notes": [
+                    "This is a read-only demo running on Vercel.",
+                    "Authentication and browser automation are disabled.",
+                ],
+            }
         return await app.state.secure_os.get_daily_briefing()
 
     @app.post("/api/action")
     async def action(payload: Dict[str, Any], _: bool = Depends(_require_token)):
+        if app.state.demo:
+            raise HTTPException(status_code=503, detail="actions disabled in demo mode")
         action = payload.get("action")
         if not action:
             raise HTTPException(status_code=400, detail="action required")
@@ -198,8 +238,10 @@ def create_app() -> FastAPI:
         return {"ok": ok, "message": msg, "data": data}
 
     @app.get("/api/logs")
-    async def logs(tail: int = 200, _: bool = Depends(_require_token)):
+    async def logs(tail: int = 200, _: bool = Depends(_maybe_require_token)):
         """Return the last N lines of the main log file."""
+        if app.state.demo:
+            return PlainTextResponse("(demo mode — logs disabled)")
         log_file = Path(pos_config.logs_dir()) / "personal_os.log"
         if not log_file.exists():
             return PlainTextResponse("(no logs)")
@@ -211,17 +253,23 @@ def create_app() -> FastAPI:
 
     # Playwright MCP control endpoints
     @app.get("/api/playwright/status")
-    async def playwright_status(_: bool = Depends(_require_token)):
+    async def playwright_status(_: bool = Depends(_maybe_require_token)):
+        if app.state.demo:
+            return {"running": False, "pid": None, "demo": True}
         running = _playwright_running()
         pid = app.state.playwright_proc.pid if running else None
         return {"running": running, "pid": pid}
 
     @app.post("/api/playwright/start")
     async def playwright_start(_: bool = Depends(_require_token)):
+        if app.state.demo:
+            return {"ok": False, "message": "playwright disabled in demo mode"}
         return _start_playwright()
 
     @app.post("/api/playwright/stop")
     async def playwright_stop(_: bool = Depends(_require_token)):
+        if app.state.demo:
+            return {"ok": True, "message": "playwright not running (demo)"}
         return _stop_playwright()
 
     return app

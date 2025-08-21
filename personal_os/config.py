@@ -49,6 +49,25 @@ def base_dir() -> Path:
     return base / "secure_personal_os"
 
 
+def is_vercel() -> bool:
+    """Detect if running in Vercel serverless environment."""
+    return bool(
+        os.getenv("VERCEL")
+        or os.getenv("VERCEL_ENV")
+        or os.getenv("NOW_REGION")
+        or os.getenv("VERCEL_URL")
+    )
+
+
+def is_demo_mode() -> bool:
+    """Demo mode disables persistent state and external automation.
+
+    Enabled automatically on Vercel or when PERSONAL_OS_DEMO_MODE is truthy.
+    """
+    env = (os.getenv(f"{APP_ENV_PREFIX}_DEMO_MODE") or "").lower()
+    return env in {"1", "true", "yes", "on"} or is_vercel()
+
+
 def config_dir() -> Path:
     xdg = os.getenv("XDG_CONFIG_HOME")
     if sys.platform == "darwin":
@@ -100,6 +119,9 @@ def permissions_path() -> Path:
 
 
 def ensure_dirs() -> None:
+    # Avoid unnecessary FS writes in demo/serverless environments
+    if is_demo_mode():
+        return
     for d in [base_dir(), config_dir(), logs_dir(), screenshots_dir(), security_dir()]:
         d.mkdir(parents=True, exist_ok=True)
 
@@ -147,4 +169,3 @@ def expand_in_config(cfg: Dict) -> Dict:
         return obj
 
     return _expand(cfg)
-

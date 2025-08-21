@@ -16,7 +16,7 @@
     </style>
   </head>
   <body>
-    <h1>🔐 Secure Personal OS</h1>
+    <h1>🔐 Secure Personal OS <small id="demoBadge" style="font-size: 14px; color: #666;"></small></h1>
     <div class="grid">
       <div class="card">
         <h3>Auth (Web Token)</h3>
@@ -31,12 +31,12 @@
         <h3>Session</h3>
         <div class="row">
           <input id="mp" type="password" placeholder="Master password" />
-          <button onclick="initSession()">Init</button>
-          <button onclick="closeSession()">Close</button>
+          <button id="btnInit" onclick="initSession()">Init</button>
+          <button id="btnClose" onclick="closeSession()">Close</button>
         </div>
         <div class="row">
-          <button onclick="getStatus()">Status</button>
-          <button onclick="getBriefing()">Daily Briefing</button>
+          <button id="btnStatus" onclick="getStatus()">Status</button>
+          <button id="btnBrief" onclick="getBriefing()">Daily Briefing</button>
         </div>
       </div>
 
@@ -45,7 +45,7 @@
         <p>Provide any subset of services (gmail, calendar, whatsapp) as JSON.</p>
         <textarea id="authJson" placeholder='{"gmail": {"email": "...", "password": "..."}}'></textarea>
         <div class="row">
-          <button onclick="auth()">Authenticate</button>
+          <button id="btnAuth" onclick="auth()">Authenticate</button>
         </div>
       </div>
 
@@ -53,7 +53,7 @@
         <h3>Action</h3>
         <div class="row"><input id="actionName" placeholder="e.g. gmail_get_unread" /></div>
         <textarea id="actionParams" placeholder='{"count": 10}'></textarea>
-        <div class="row"><button onclick="doAction()">Run</button></div>
+        <div class="row"><button id="btnRun" onclick="doAction()">Run</button></div>
       </div>
 
       <div class="card">
@@ -65,9 +65,9 @@
       <div class="card">
         <h3>Playwright MCP</h3>
         <div class="row">
-          <button onclick="pwStatus()">Status</button>
-          <button onclick="pwStart()">Start</button>
-          <button onclick="pwStop()">Stop</button>
+          <button id="btnPwStatus" onclick="pwStatus()">Status</button>
+          <button id="btnPwStart" onclick="pwStart()">Start</button>
+          <button id="btnPwStop" onclick="pwStop()">Stop</button>
         </div>
         <pre id="pw">(unknown)</pre>
       </div>
@@ -107,6 +107,23 @@
       async function pwStatus() { try { document.getElementById('pw').textContent = JSON.stringify(await get('/api/playwright/status'), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
       async function pwStart() { try { document.getElementById('pw').textContent = JSON.stringify(await post('/api/playwright/start', {}), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
       async function pwStop() { try { document.getElementById('pw').textContent = JSON.stringify(await post('/api/playwright/stop', {}), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
+
+      // Initialize UI based on /api/info (demo mode, token)
+      (async function initUI(){
+        try {
+          const info = await get('/api/info');
+          const demo = !!info.demo;
+          document.getElementById('demoBadge').textContent = demo ? '— Demo Mode' : '';
+          if (demo) {
+            // Disable stateful controls in demo mode
+            ['btnInit','btnClose','btnAuth','btnRun','btnPwStart','btnPwStop'].forEach(id=>{
+              const el = document.getElementById(id); if (el) el.disabled = true;
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
     </script>
   </body>
   </html>

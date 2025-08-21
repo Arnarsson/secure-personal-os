@@ -31,6 +31,7 @@ Environment overrides (examples):
 - `PERSONAL_OS_PERMISSIONS`, `PERSONAL_OS_VAULT`, `PERSONAL_OS_AUDIT_LOG` – paths
 - `PERSONAL_OS_WEB_TOKEN` – bearer token required by web API (if not set, a dev token is generated and logged on startup)
 - `PERSONAL_OS_AUTOSTART_PLAYWRIGHT` – set to `1` to auto-start Playwright MCP server with the web app
+- `PERSONAL_OS_DEMO_MODE` – set to `1` to disable stateful features (auto-enabled on Vercel)
 
 ### Deploy (Vercel Preview)
 
@@ -44,6 +45,10 @@ npx vercel --prod                    # optional: production deploy
 ```
 
 Serverless entrypoint for Vercel lives at `api/index.py` and routes all paths to the FastAPI `app`.
+
+Demo mode on Vercel:
+- The app auto-detects Vercel and enables a read-only demo mode (no session init, auth, actions, Playwright, or logs).
+- You can override via `PERSONAL_OS_DEMO_MODE=0` if you run outside serverless.
 
 Notes:
 - Ensure this repository/branch (with `api/index.py` and `vercel.json`) is connected in Vercel.
