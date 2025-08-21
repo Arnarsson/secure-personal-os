@@ -38,7 +38,7 @@ try:
     from pathlib import Path
     
     # Define the memory manager class inline for MCP server
-    class PersonalOSMemoryManager:
+class PersonalOSMemoryManager:
         def __init__(self, config_path="personal-os-memory-config.json"):
             self.config_path = config_path
             try:
@@ -124,6 +124,12 @@ except Exception as e:
         def get_memory_status(self):
             return {"status": "fallback_mode", "servers": {}, "session_id": self.session_id}
 
+# Optional bearer-token gate for MCP tools
+# If PERSONAL_OS_MCP_TOKEN is set, clients must first call `personal_os_login`
+# with a matching token before other tools respond.
+MCP_REQUIRED_TOKEN = os.getenv("PERSONAL_OS_MCP_TOKEN") or None
+MCP_AUTHENTICATED = False if MCP_REQUIRED_TOKEN else True
+
 # MCP Protocol imports
 try:
     from mcp.server.stdio import stdio_server
@@ -197,6 +203,17 @@ def run_personal_os_command(command: str, *args) -> str:
 async def list_tools() -> List[Tool]:
     """List all available Personal OS tools"""
     return [
+        Tool(
+            name="personal_os_login",
+            description="Authenticate this MCP session with a bearer token if required",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "token": {"type": "string", "description": "Bearer token"}
+                },
+                "required": ["token"]
+            }
+        ),
         Tool(
             name="secure_personal_os_daily",
             description="Get secure daily briefing with authenticated services (Gmail, Calendar, WhatsApp)",
@@ -463,8 +480,23 @@ async def list_tools() -> List[Tool]:
 @server.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
     """Handle tool calls"""
-    
+    global MCP_AUTHENTICATED
+    # Enforce optional bearer token gate
+    if MCP_REQUIRED_TOKEN and not MCP_AUTHENTICATED and name != "personal_os_login":
+        return [TextContent(type="text", text="🔒 Unauthorized. Call `personal_os_login` with a valid token to continue.")]
+
     try:
+        if name == "personal_os_login":
+            token = (arguments or {}).get("token")
+            if not MCP_REQUIRED_TOKEN:
+                MCP_AUTHENTICATED = True
+                return [TextContent(type="text", text="✅ No token required. Authentication open.")]
+            if token == MCP_REQUIRED_TOKEN:
+                MCP_AUTHENTICATED = True
+                return [TextContent(type="text", text="✅ Authenticated. You may now use other tools.")]
+            else:
+                return [TextContent(type="text", text="❌ Invalid token")]
+
         # Secure Personal OS tools
         if name == "secure_personal_os_daily":
             if not secure_os:
