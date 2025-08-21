@@ -29,6 +29,8 @@ Environment overrides (examples):
 - `PERSONAL_OS_HOME` – base data dir
 - `PERSONAL_OS_WEB_HOST`, `PERSONAL_OS_WEB_PORT` – web bind
 - `PERSONAL_OS_PERMISSIONS`, `PERSONAL_OS_VAULT`, `PERSONAL_OS_AUDIT_LOG` – paths
+- `PERSONAL_OS_WEB_TOKEN` – bearer token required by web API (if not set, a dev token is generated and logged on startup)
+- `PERSONAL_OS_AUTOSTART_PLAYWRIGHT` – set to `1` to auto-start Playwright MCP server with the web app
 
 ### Deploy (Vercel Preview)
 
