@@ -13,14 +13,17 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import hashlib
 import json
+from personal_os import config as pos_config
 
 class PermissionManager:
     def __init__(self, config_path: str = None):
         """Initialize Permission Manager with configuration"""
-        if config_path is None:
-            config_path = "/Users/sven/Desktop/MCP/personal-os/permissions/permissions.yaml"
-        
-        self.config_path = config_path
+        # Ensure directories exist early
+        pos_config.ensure_dirs()
+
+        # Resolve configuration path
+        self.config_path = config_path or str(pos_config.permissions_path())
+
         self.config = self._load_config()
         self.rate_limiter = {}
         self.failed_attempts = {}
@@ -32,43 +35,87 @@ class PermissionManager:
         """Load permissions configuration from YAML file"""
         try:
             with open(self.config_path, 'r') as f:
-                return yaml.safe_load(f)
+                raw = yaml.safe_load(f)
+                # Expand placeholders and env vars
+                return pos_config.expand_in_config(raw or {})
         except FileNotFoundError:
-            self.logger.error(f"Permission config not found: {self.config_path}")
+            # Fall back to default restrictive config
             return self._get_default_config()
         except yaml.YAMLError as e:
-            self.logger.error(f"Error parsing permissions config: {e}")
+            logging.getLogger('PersonalOS_Security').error(f"Error parsing permissions config: {e}")
             return self._get_default_config()
     
     def _get_default_config(self) -> Dict[str, Any]:
         """Return default restrictive configuration"""
-        return {
+        subs = pos_config.substitutions()
+        return pos_config.expand_in_config({
             "file_access": {
-                "allowed_paths": ["/Users/sven/Desktop/MCP/personal-os/"],
-                "blocked_paths": ["/Users/sven/.ssh/", "/**/.env"],
-                "sensitive_extensions": [".pem", ".key", ".p12"]
+                "allowed_paths": [
+                    "${APP_HOME}/",
+                    "${TMPDIR}/personal-os/",
+                    "${CWD}/",
+                ],
+                "blocked_paths": [
+                    "${HOME}/.ssh/",
+                    "/**/.env",
+                    "/**/.env.*",
+                    "/**/id_rsa",
+                    "/**/id_ed25519",
+                ],
+                "sensitive_extensions": [".pem", ".key", ".p12", ".pfx", ".crt"],
             },
             "web_access": {
-                "allowed_domains": [],
-                "require_confirmation": ["send_email", "send_message"],
-                "rate_limits": {"send_email": 10, "send_message": 20}
+                "allowed_domains": [
+                    "mail.google.com",
+                    "calendar.google.com",
+                    "web.whatsapp.com",
+                    "accounts.google.com",
+                ],
+                "require_confirmation": [
+                    "send_email",
+                    "send_message",
+                    "create_event",
+                    "delete_email",
+                    "delete_event",
+                ],
+                "rate_limits": {"send_email": 50, "send_message": 100, "create_event": 20},
             },
-            "audit": {"enabled": True, "log_level": "INFO"}
-        }
+            "browser_security": {
+                "isolated_session": True,
+                "clear_cookies_on_exit": False,
+                "disable_extensions": True,
+                "disable_plugins": True,
+                "capture_screenshots": True,
+                "page_load_timeout": 30,
+                "action_timeout": 10,
+            },
+            "audit": {
+                "enabled": True,
+                "log_level": "INFO",
+                "log_file": "${AUDIT_LOG}",
+            },
+            "credentials": {
+                "vault_file": "${VAULT_FILE}",
+                "auto_lock_timeout": 1800,
+            },
+        })
     
     def _setup_logging(self):
         """Set up audit logging"""
         audit_config = self.config.get('audit', {})
-        
+
         # Create logs directory if it doesn't exist
-        log_file = audit_config.get('log_file', '/tmp/personal_os_audit.log')
+        log_file = pos_config.expand_placeholders(audit_config.get('log_file', str(pos_config.audit_log_path())))
         log_dir = os.path.dirname(log_file)
         os.makedirs(log_dir, exist_ok=True)
-        
+
         # Configure logger
         self.logger = logging.getLogger('PersonalOS_Security')
         self.logger.setLevel(getattr(logging, audit_config.get('log_level', 'INFO')))
-        
+
+        # Avoid duplicate handlers on re-init
+        self.logger.handlers = []
+
         # File handler
         handler = logging.FileHandler(log_file)
         formatter = logging.Formatter(
@@ -291,10 +338,10 @@ def main():
     
     # Test file access
     test_files = [
-        "/Users/sven/Desktop/MCP/personal-os/test.txt",  # Should be allowed
-        "/Users/sven/.ssh/id_rsa",  # Should be blocked
-        "/Users/sven/Documents/PersonalOS/data.json",  # Should be allowed
-        "/System/Library/important.file"  # Should be blocked
+        str(Path.cwd() / "test.txt"),  # Should be allowed (cwd)
+        str(Path.home() / ".ssh" / "id_rsa"),  # Should be blocked
+        str(Path(pos_config.base_dir()) / "data.json"),  # Should be allowed (app home)
+        "/System/Library/important.file",  # Likely blocked on macOS
     ]
     
     for file_path in test_files:

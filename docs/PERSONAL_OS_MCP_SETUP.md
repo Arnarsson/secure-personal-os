@@ -16,9 +16,9 @@ Your Personal OS is now available as an MCP server with 12 powerful tools. Here'
    {
      "personal-os": {
        "command": "python3",
-       "args": ["/Users/sven/Desktop/MCP/personal-os-mcp-server.py"],
+       "args": ["/absolute/path/to/secure-personal-os/core/personal-os-mcp-server.py"],
        "env": {
-         "PYTHONPATH": "/Users/sven/Desktop/MCP"
+         "PYTHONPATH": "/absolute/path/to/secure-personal-os"
        }
      }
    }
@@ -116,12 +116,12 @@ Total memories: **2,847+ interactions** | **892 concepts** | **1,203 relationshi
 ### If tools don't appear:
 1. Check Python path is correct
 2. Ensure all dependencies installed: `pip install mcp asyncio`
-3. Verify server starts: `python3 /Users/sven/Desktop/MCP/personal-os-mcp-server.py`
+3. Verify server starts: `python3 /absolute/path/to/secure-personal-os/core/personal-os-mcp-server.py`
 4. Restart Claude Desktop completely
 
 ### If memory doesn't work:
 1. Initialize system: `./personal-os.sh init`
-2. Check memory config exists: `/Users/sven/Desktop/MCP/personal-os-memory-config.json`
+2. Check memory config exists: `~/Library/Application Support/SecurePersonalOS/config/personal-os-memory-config.json` (or OS equivalent)
 3. Test memory manager: `python3 personal-os-memory-manager.py status`
 
 ## Success Indicators

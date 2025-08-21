@@ -118,7 +118,13 @@ class WhatsAppIntegration:
         """Create a shortcut command for quick messaging"""
         try:
             # Create a simple shell script for quick WhatsApp messaging
-            shortcut_dir = os.path.expanduser("~/Desktop/MCP/personal-os/shortcuts")
+            try:
+                from personal_os import config as pos_config
+                pos_config.ensure_dirs()
+                shortcut_dir = os.path.join(str(pos_config.base_dir()), "shortcuts")
+            except Exception:
+                # Fallback to temp directory
+                shortcut_dir = os.path.join(os.path.expanduser("~"), ".personal_os_shortcuts")
             os.makedirs(shortcut_dir, exist_ok=True)
             
             shortcut_path = os.path.join(shortcut_dir, f"whatsapp_{name.lower()}.sh")

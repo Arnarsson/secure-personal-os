@@ -23,9 +23,9 @@ The startup script will show you the configuration. Add this to your Claude Desk
   "mcpServers": {
     "personal-os": {
       "command": "python",
-      "args": ["/Users/sven/Desktop/MCP/secure-personal-os/core/personal-os-mcp-server.py"],
+      "args": ["/absolute/path/to/secure-personal-os/core/personal-os-mcp-server.py"],
       "env": {
-        "PYTHONPATH": "/Users/sven/Desktop/MCP/secure-personal-os"
+        "PYTHONPATH": "/absolute/path/to/secure-personal-os"
       }
     },
     "playwright": {

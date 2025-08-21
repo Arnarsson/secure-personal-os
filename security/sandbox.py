@@ -18,6 +18,7 @@ import json
 import logging
 from contextlib import contextmanager
 from .permission_manager import PermissionManager
+from personal_os import config as pos_config
 
 class SandboxEnvironment:
     def __init__(self, permission_manager: PermissionManager):
@@ -68,7 +69,7 @@ class SandboxEnvironment:
         
         # Copy essential files if needed
         essential_files = {
-            'permissions.yaml': '/Users/sven/Desktop/MCP/personal-os/permissions/permissions.yaml'
+            'permissions.yaml': str(pos_config.permissions_path())
         }
         
         for dest_name, src_path in essential_files.items():

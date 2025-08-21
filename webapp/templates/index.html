@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secure Personal OS</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+      h1 { margin-top: 0; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(300px, 1fr)); gap: 16px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+      .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+      input, button, textarea { padding: 8px; font-size: 14px; }
+      textarea { width: 100%; height: 120px; }
+      pre { background: #f7f7f7; padding: 8px; border-radius: 6px; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>🔐 Secure Personal OS <small id="demoBadge" style="font-size: 14px; color: #666;"></small></h1>
+    <div class="grid">
+      <div class="card">
+        <h3>Auth (Web Token)</h3>
+        <div class="row">
+          <input id="token" placeholder="Paste PERSONAL_OS_WEB_TOKEN" />
+          <button onclick="saveToken()">Use Token</button>
+          <button onclick="revealToken()">Reveal (dev)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Session</h3>
+        <div class="row">
+          <input id="mp" type="password" placeholder="Master password" />
+          <button id="btnInit" onclick="initSession()">Init</button>
+          <button id="btnClose" onclick="closeSession()">Close</button>
+        </div>
+        <div class="row">
+          <button id="btnStatus" onclick="getStatus()">Status</button>
+          <button id="btnBrief" onclick="getBriefing()">Daily Briefing</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Auth</h3>
+        <p>Provide any subset of services (gmail, calendar, whatsapp) as JSON.</p>
+        <textarea id="authJson" placeholder='{"gmail": {"email": "...", "password": "..."}}'></textarea>
+        <div class="row">
+          <button id="btnAuth" onclick="auth()">Authenticate</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Action</h3>
+        <div class="row"><input id="actionName" placeholder="e.g. gmail_get_unread" /></div>
+        <textarea id="actionParams" placeholder='{"count": 10}'></textarea>
+        <div class="row"><button id="btnRun" onclick="doAction()">Run</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Logs</h3>
+        <div class="row"><button onclick="loadLogs()">Refresh</button></div>
+        <pre id="logs">(click refresh)</pre>
+      </div>
+
+      <div class="card">
+        <h3>Playwright MCP</h3>
+        <div class="row">
+          <button id="btnPwStatus" onclick="pwStatus()">Status</button>
+          <button id="btnPwStart" onclick="pwStart()">Start</button>
+          <button id="btnPwStop" onclick="pwStop()">Stop</button>
+        </div>
+        <pre id="pw">(unknown)</pre>
+      </div>
+    </div>
+
+    <h3>Output</h3>
+    <pre id="out">(waiting)</pre>
+
+    <script>
+      function authHeaders() {
+        const h = { 'Content-Type': 'application/json' };
+        const t = localStorage.getItem('pos_token');
+        if (t) h['Authorization'] = `Bearer ${t}`;
+        return h;
+      }
+      async function post(url, body) {
+        const r = await fetch(url, { method: 'POST', headers: authHeaders(), body: JSON.stringify(body) });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
+      }
+      async function get(url) {
+        const r = await fetch(url, { headers: authHeaders() });
+        if (!r.ok) throw new Error(await r.text());
+        try { return await r.json(); } catch { return await r.text(); }
+      }
+      function show(x) { document.getElementById('out').textContent = typeof x === 'string' ? x : JSON.stringify(x, null, 2); }
+      function saveToken() { const v = document.getElementById('token').value; localStorage.setItem('pos_token', v); alert('Saved token to browser for this app.'); }
+      async function revealToken() { try { show(await get('/api/token')); } catch (e) { show(String(e)); } }
+
+      async function initSession() { try { const mp = document.getElementById('mp').value; show(await post('/api/session/init', { master_password: mp })); } catch (e) { show(String(e)); } }
+      async function closeSession() { try { show(await post('/api/session/close', {})); } catch (e) { show(String(e)); } }
+      async function getStatus() { try { show(await get('/api/status')); } catch (e) { show(String(e)); } }
+      async function getBriefing() { try { show(await get('/api/briefing')); } catch (e) { show(String(e)); } }
+      async function auth() { try { const v = document.getElementById('authJson').value || '{}'; show(await post('/api/auth', JSON.parse(v))); } catch (e) { show(String(e)); } }
+      async function doAction() { try { const name = document.getElementById('actionName').value; const params = document.getElementById('actionParams').value || '{}'; show(await post('/api/action', { action: name, params: JSON.parse(params) })); } catch (e) { show(String(e)); } }
+      async function loadLogs() { try { document.getElementById('logs').textContent = await get('/api/logs'); } catch (e) { document.getElementById('logs').textContent = String(e); } }
+      async function pwStatus() { try { document.getElementById('pw').textContent = JSON.stringify(await get('/api/playwright/status'), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
+      async function pwStart() { try { document.getElementById('pw').textContent = JSON.stringify(await post('/api/playwright/start', {}), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
+      async function pwStop() { try { document.getElementById('pw').textContent = JSON.stringify(await post('/api/playwright/stop', {}), null, 2); } catch (e) { document.getElementById('pw').textContent = String(e); } }
+
+      // Initialize UI based on /api/info (demo mode, token)
+      (async function initUI(){
+        try {
+          const info = await get('/api/info');
+          const demo = !!info.demo;
+          document.getElementById('demoBadge').textContent = demo ? '— Demo Mode' : '';
+          if (demo) {
+            // Disable stateful controls in demo mode
+            ['btnInit','btnClose','btnAuth','btnRun','btnPwStart','btnPwStop'].forEach(id=>{
+              const el = document.getElementById(id); if (el) el.disabled = true;
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
+  </body>
+  </html>

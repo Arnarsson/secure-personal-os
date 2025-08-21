@@ -2,18 +2,17 @@
 
 # File System Access Control
 file_access:
-  # Directories the Personal OS can access
+  # Directories the Personal OS can access (placeholders resolved at runtime)
   allowed_paths:
-    - "/Users/sven/Desktop/MCP/personal-os/"
-    - "/Users/sven/Documents/PersonalOS/"
-    - "/Users/sven/Downloads/PersonalOS/"
-    - "/tmp/personal-os/"
+    - "${APP_HOME}/"
+    - "${CWD}/"
+    - "${TMPDIR}/personal-os/"
   
   # Directories that are strictly forbidden
   blocked_paths:
-    - "/Users/sven/.ssh/"
-    - "/Users/sven/.aws/"
-    - "/Users/sven/.docker/"
+    - "${HOME}/.ssh/"
+    - "${HOME}/.aws/"
+    - "${HOME}/.docker/"
     - "/**/.env"
     - "/**/.env.*"
     - "/**/id_rsa"
@@ -83,7 +82,7 @@ audit:
   log_level: "INFO"
   
   # Log file settings
-  log_file: "/Users/sven/Desktop/MCP/personal-os/logs/audit.log"
+  log_file: "${LOGS_DIR}/audit.log"
   max_log_size: 100MB
   backup_count: 5
   
@@ -105,7 +104,7 @@ credentials:
   iterations: 100000
   
   # Storage location
-  vault_file: "/Users/sven/Desktop/MCP/personal-os/security/credential_vault.enc"
+  vault_file: "${SECURITY_DIR}/credential_vault.enc"
   
   # Auto-lock settings
   auto_lock_timeout: 1800  # 30 minutes

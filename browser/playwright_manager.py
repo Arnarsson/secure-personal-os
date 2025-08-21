@@ -15,8 +15,9 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 import subprocess
 
-from ..security.permission_manager import PermissionManager
-from ..security.credential_vault import CredentialVault
+from security.permission_manager import PermissionManager
+from security.credential_vault import CredentialVault
+from personal_os import config as pos_config
 
 class PlaywrightManager:
     def __init__(self, permission_manager: PermissionManager, credential_vault: CredentialVault):
@@ -26,7 +27,8 @@ class PlaywrightManager:
         self.browser_process = None
         self.current_page = None
         self.session_data = {}
-        self.screenshot_dir = "/Users/sven/Desktop/MCP/personal-os/logs/screenshots"
+        pos_config.ensure_dirs()
+        self.screenshot_dir = str(pos_config.screenshots_dir())
         
         # Ensure screenshot directory exists
         os.makedirs(self.screenshot_dir, exist_ok=True)
@@ -433,8 +435,8 @@ class PlaywrightManager:
 def main():
     """Test the Playwright Manager"""
     import asyncio
-    from ..security.permission_manager import PermissionManager
-    from ..security.credential_vault import CredentialVault
+    from security.permission_manager import PermissionManager
+    from security.credential_vault import CredentialVault
     
     async def test_browser():
         pm = PermissionManager()

@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # Secure Personal OS Startup Script
-# This script helps you start the Personal OS MCP server
+# Modes:
+#   ./start.sh web   - run FastAPI web app (default)
+#   ./start.sh mcp   - run MCP server for Claude Desktop
+#   ./start.sh both  - run web app in background, then MCP server
 
 set -e  # Exit on error
 
@@ -15,10 +18,12 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+MODE="${1:-web}"
+
 # Check if we're in the right directory
-if [ ! -f "core/personal-os-mcp-server.py" ]; then
-    echo "❌ Please run this script from the personal-os directory"
-    echo "Usage: cd /path/to/personal-os && ./start.sh"
+if [ ! -f "core/personal-os-mcp-server.py" ] || [ ! -f "webapp/app.py" ]; then
+    echo "❌ Please run this script from the repo root (contains core/ and webapp/)"
+    echo "Usage: cd /path/to/secure-personal-os && ./start.sh [web|mcp|both]"
     exit 1
 fi
 
@@ -43,40 +48,50 @@ else
     fi
 fi
 
-# Check for Playwright MCP server
-if ! command -v npx &> /dev/null || ! npx @modelcontextprotocol/server-playwright --help &> /dev/null; then
-    echo "⚠️  Playwright MCP server not found."
-    echo "Installing Playwright MCP server..."
-    npm install -g @modelcontextprotocol/server-playwright
-fi
-
-# Set PYTHONPATH
+# Set PYTHONPATH for imports
 export PYTHONPATH="$(pwd):$PYTHONPATH"
 
-echo "🚀 Starting Personal OS MCP Server..."
-echo ""
-echo "📋 Configuration needed in Claude Desktop:"
-echo "Add this to your claude_desktop_config.json:"
-echo ""
-echo "{"
-echo "  \"mcpServers\": {"
-echo "    \"personal-os\": {"
-echo "      \"command\": \"python\","
-echo "      \"args\": [\"$(pwd)/core/personal-os-mcp-server.py\"],"
-echo "      \"env\": {"
-echo "        \"PYTHONPATH\": \"$(pwd)\""
-echo "      }"
-echo "    },"
-echo "    \"playwright\": {"
-echo "      \"command\": \"npx\","
-echo "      \"args\": [\"@modelcontextprotocol/server-playwright\"]"
-echo "    }"
-echo "  }"
-echo "}"
-echo ""
-echo "🔄 Starting server (press Ctrl+C to stop)..."
-echo ""
+if [ "$MODE" = "web" ] || [ "$MODE" = "both" ]; then
+    echo "🚀 Starting Web App (FastAPI) on http://127.0.0.1:8000"
+    # Allow custom host/port via env
+    export PERSONAL_OS_WEB_HOST="${PERSONAL_OS_WEB_HOST:-127.0.0.1}"
+    export PERSONAL_OS_WEB_PORT="${PERSONAL_OS_WEB_PORT:-8000}"
+    if [ "$MODE" = "both" ]; then
+        # Run in background
+        uvicorn webapp.app:app --host "$PERSONAL_OS_WEB_HOST" --port "$PERSONAL_OS_WEB_PORT" &
+        WEB_PID=$!
+        echo "🌐 Web PID: $WEB_PID"
+    else
+        exec uvicorn webapp.app:app --host "$PERSONAL_OS_WEB_HOST" --port "$PERSONAL_OS_WEB_PORT"
+    fi
+fi
 
-# Start the MCP server
-cd core
-python personal-os-mcp-server.py
+if [ "$MODE" = "mcp" ] || [ "$MODE" = "both" ]; then
+    # Check for Playwright MCP server CLI presence
+    if ! command -v npx &> /dev/null; then
+        echo "⚠️  Node/npx not found. Install Node.js 18+ for Playwright MCP server integration."
+    fi
+
+    echo "🚀 Starting Personal OS MCP Server..."
+    echo ""
+    echo "📋 Claude Desktop MCP snippet (update path as needed):"
+    cat <<JSON
+{
+  "mcpServers": {
+    "personal-os": {
+      "command": "python",
+      "args": ["$(pwd)/core/personal-os-mcp-server.py"],
+      "env": { "PYTHONPATH": "$(pwd)" }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-playwright"]
+    }
+  }
+}
+JSON
+    echo ""
+    echo "🔄 Starting MCP server (Ctrl+C to stop)..."
+    cd core
+    exec python personal-os-mcp-server.py
+fi

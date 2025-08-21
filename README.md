@@ -11,6 +11,53 @@ A secure, browser automation-powered personal assistant that safely accesses you
 - **🤖 Claude Desktop Integration**: MCP tools for seamless AI assistant integration
 - **🔍 Audit Trail**: Complete logging of all activities and security events
 
+## 🌐 Web App + MCP
+
+- Web app: Run a FastAPI server with a minimal UI to initialize sessions, authenticate services, run actions, and view logs.
+- MCP server: Exposes tools to Claude Desktop via `core/personal-os-mcp-server.py`.
+
+Quick start:
+
+```
+./start.sh web          # launches http://127.0.0.1:8000
+./start.sh mcp          # launches MCP server for Claude Desktop
+./start.sh both         # web + MCP server
+```
+
+Environment overrides (examples):
+
+- `PERSONAL_OS_HOME` – base data dir
+- `PERSONAL_OS_WEB_HOST`, `PERSONAL_OS_WEB_PORT` – web bind
+- `PERSONAL_OS_PERMISSIONS`, `PERSONAL_OS_VAULT`, `PERSONAL_OS_AUDIT_LOG` – paths
+- `PERSONAL_OS_WEB_TOKEN` – bearer token required by web API (if not set, a dev token is generated and logged on startup)
+- `PERSONAL_OS_AUTOSTART_PLAYWRIGHT` – set to `1` to auto-start Playwright MCP server with the web app
+- `PERSONAL_OS_DEMO_MODE` – set to `1` to disable stateful features (auto-enabled on Vercel)
+
+### Deploy (Vercel Preview)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Arnarsson/secure-personal-os)
+
+CLI (requires Vercel CLI):
+
+```
+npx vercel                           # first-time: link project, creates preview URL
+npx vercel --prod                    # optional: production deploy
+```
+
+Serverless entrypoint for Vercel lives at `api/index.py` and routes all paths to the FastAPI `app`.
+
+Demo mode on Vercel:
+- The app auto-detects Vercel and enables a read-only demo mode (no session init, auth, actions, Playwright, or logs).
+- You can override via `PERSONAL_OS_DEMO_MODE=0` if you run outside serverless.
+
+Notes:
+- Ensure this repository/branch (with `api/index.py` and `vercel.json`) is connected in Vercel.
+- Add secrets in the Vercel Project Settings for GitHub Actions (if using the workflow): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- Python runtime is configured to `python3.11` via `vercel.json`. Dependencies are taken from the root `requirements.txt`.
+
+MCP/Auth env:
+- `PERSONAL_OS_MCP_TOKEN` – optional token gate for MCP server; if set, call `personal_os_login` with this token before other tools.
+
 ## 🏗️ Architecture
 
 ```
