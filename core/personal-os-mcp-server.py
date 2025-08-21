@@ -14,12 +14,16 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 import os
 
-# Add the current directory to Python path for imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add core dir and repo root to Python path for imports
+_core_dir = os.path.dirname(os.path.abspath(__file__))
+_repo_root = os.path.dirname(_core_dir)
+for p in (_core_dir, _repo_root):
+    if p not in sys.path:
+        sys.path.append(p)
 
 # Import the Secure Personal OS
 try:
-    from secure_personal_os import SecurePersonalOS
+    from core.secure_personal_os import SecurePersonalOS
     secure_os_available = True
 except ImportError as e:
     print(f"Warning: Could not import SecurePersonalOS: {e}")

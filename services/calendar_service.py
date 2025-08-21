@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import logging
 
-from ..browser.playwright_manager import PlaywrightManager
-from ..security.permission_manager import PermissionManager
+from browser.playwright_manager import PlaywrightManager
+from security.permission_manager import PermissionManager
 
 class CalendarService:
     def __init__(self, playwright_manager: PlaywrightManager, permission_manager: PermissionManager):
@@ -464,9 +464,9 @@ class CalendarService:
 def main():
     """Test Calendar service"""
     import asyncio
-    from ..browser.playwright_manager import PlaywrightManager
-    from ..security.permission_manager import PermissionManager
-    from ..security.credential_vault import CredentialVault
+    from browser.playwright_manager import PlaywrightManager
+    from security.permission_manager import PermissionManager
+    from security.credential_vault import CredentialVault
     
     async def test_calendar():
         pm = PermissionManager()

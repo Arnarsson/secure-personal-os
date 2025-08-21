@@ -14,15 +14,16 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
 # Import security components
-from ..security.permission_manager import PermissionManager
-from ..security.credential_vault import CredentialVault
-from ..security.sandbox import SandboxEnvironment
+from security.permission_manager import PermissionManager
+from security.credential_vault import CredentialVault
+from security.sandbox import SandboxEnvironment
+from personal_os import config as pos_config
 
 # Import browser and services
-from ..browser.playwright_manager import PlaywrightManager
-from ..services.gmail_service import GmailService
-from ..services.calendar_service import CalendarService
-from ..services.whatsapp_service import WhatsAppService
+from browser.playwright_manager import PlaywrightManager
+from services.gmail_service import GmailService
+from services.calendar_service import CalendarService
+from services.whatsapp_service import WhatsAppService
 
 class SecurePersonalOS:
     """Main orchestrator for the Secure Personal OS"""
@@ -55,7 +56,8 @@ class SecurePersonalOS:
         
     def _setup_logging(self):
         """Set up comprehensive logging"""
-        log_dir = "/Users/sven/Desktop/MCP/personal-os/logs"
+        pos_config.ensure_dirs()
+        log_dir = str(pos_config.logs_dir())
         os.makedirs(log_dir, exist_ok=True)
         
         # Main log file
@@ -380,7 +382,7 @@ class SecurePersonalOS:
             self.credential_vault.lock_vault()
             
             # Save session data
-            session_file = f"/Users/sven/Desktop/MCP/personal-os/logs/session_{self.session_data.get('session_id', 'unknown')}.json"
+            session_file = str(Path(pos_config.logs_dir()) / f"session_{self.session_data.get('session_id', 'unknown')}.json")
             with open(session_file, 'w') as f:
                 json.dump(self.session_data, f, indent=2)
             os.chmod(session_file, 0o600)

@@ -16,12 +16,14 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import logging
+from personal_os import config as pos_config
 
 class CredentialVault:
     def __init__(self, vault_path: str = None, master_password: str = None):
         """Initialize encrypted credential vault"""
         if vault_path is None:
-            vault_path = "/Users/sven/Desktop/MCP/personal-os/security/credential_vault.enc"
+            pos_config.ensure_dirs()
+            vault_path = str(pos_config.vault_path())
         
         self.vault_path = vault_path
         self.vault_dir = os.path.dirname(vault_path)
