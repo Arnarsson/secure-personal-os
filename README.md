@@ -11,6 +11,25 @@ A secure, browser automation-powered personal assistant that safely accesses you
 - **🤖 Claude Desktop Integration**: MCP tools for seamless AI assistant integration
 - **🔍 Audit Trail**: Complete logging of all activities and security events
 
+## 🌐 Web App + MCP
+
+- Web app: Run a FastAPI server with a minimal UI to initialize sessions, authenticate services, run actions, and view logs.
+- MCP server: Exposes tools to Claude Desktop via `core/personal-os-mcp-server.py`.
+
+Quick start:
+
+```
+./start.sh web          # launches http://127.0.0.1:8000
+./start.sh mcp          # launches MCP server for Claude Desktop
+./start.sh both         # web + MCP server
+```
+
+Environment overrides (examples):
+
+- `PERSONAL_OS_HOME` – base data dir
+- `PERSONAL_OS_WEB_HOST`, `PERSONAL_OS_WEB_PORT` – web bind
+- `PERSONAL_OS_PERMISSIONS`, `PERSONAL_OS_VAULT`, `PERSONAL_OS_AUDIT_LOG` – paths
+
 ## 🏗️ Architecture
 
 ```
