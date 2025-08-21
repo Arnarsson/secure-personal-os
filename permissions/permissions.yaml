@@ -1,0 +1,135 @@
+# Personal OS Security Permissions Configuration
+
+# File System Access Control
+file_access:
+  # Directories the Personal OS can access
+  allowed_paths:
+    - "/Users/sven/Desktop/MCP/personal-os/"
+    - "/Users/sven/Documents/PersonalOS/"
+    - "/Users/sven/Downloads/PersonalOS/"
+    - "/tmp/personal-os/"
+  
+  # Directories that are strictly forbidden
+  blocked_paths:
+    - "/Users/sven/.ssh/"
+    - "/Users/sven/.aws/"
+    - "/Users/sven/.docker/"
+    - "/**/.env"
+    - "/**/.env.*"
+    - "/**/id_rsa"
+    - "/**/id_ed25519"
+    - "/System/"
+    - "/Library/Keychains/"
+    - "/var/root/"
+  
+  # File extensions that require confirmation
+  sensitive_extensions:
+    - ".pem"
+    - ".key"
+    - ".p12"
+    - ".pfx"
+    - ".crt"
+
+# Web Access Control
+web_access:
+  # Domains the Personal OS can access
+  allowed_domains:
+    - "mail.google.com"
+    - "calendar.google.com"  
+    - "web.whatsapp.com"
+    - "accounts.google.com"  # For authentication
+  
+  # Actions that require user confirmation
+  require_confirmation:
+    - "send_email"
+    - "send_message"
+    - "create_event"
+    - "delete_email"
+    - "delete_event"
+    - "forward_email"
+    - "share_calendar"
+  
+  # Rate limits (actions per hour)
+  rate_limits:
+    send_email: 50
+    send_message: 100
+    create_event: 20
+    read_email: 1000
+    read_calendar: 500
+
+# Browser Security Settings
+browser_security:
+  # Browser isolation settings
+  isolated_session: true
+  clear_cookies_on_exit: false  # Keep sessions for convenience
+  disable_extensions: true
+  disable_plugins: true
+  
+  # Screenshot settings for transparency
+  capture_screenshots: true
+  screenshot_sensitive_actions: true
+  
+  # Timeout settings (seconds)
+  page_load_timeout: 30
+  action_timeout: 10
+  session_timeout: 3600  # 1 hour
+
+# Audit and Logging
+audit:
+  # Enable comprehensive logging
+  enabled: true
+  
+  # Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "INFO"
+  
+  # Log file settings
+  log_file: "/Users/sven/Desktop/MCP/personal-os/logs/audit.log"
+  max_log_size: 100MB
+  backup_count: 5
+  
+  # What to log
+  log_actions:
+    - "file_access"
+    - "web_navigation"
+    - "email_actions"
+    - "calendar_actions"
+    - "whatsapp_actions"
+    - "permission_checks"
+    - "security_violations"
+
+# Credential Management
+credentials:
+  # Encryption settings
+  encryption_method: "AES-256-GCM"
+  key_derivation: "PBKDF2"
+  iterations: 100000
+  
+  # Storage location
+  vault_file: "/Users/sven/Desktop/MCP/personal-os/security/credential_vault.enc"
+  
+  # Auto-lock settings
+  auto_lock_timeout: 1800  # 30 minutes
+  require_auth_for_sensitive: true
+
+# Emergency Settings
+emergency:
+  # Panic mode - disable all access
+  panic_mode_enabled: false
+  
+  # Maximum failed login attempts before lockout
+  max_failed_attempts: 5
+  lockout_duration: 300  # 5 minutes
+  
+  # Emergency contact (for notifications)
+  emergency_contact: "sven@example.com"
+
+# Development Settings (disable in production)
+development:
+  # Allow insecure connections for testing
+  allow_http: false
+  
+  # Detailed debug logging
+  debug_mode: false
+  
+  # Skip some security checks
+  skip_permission_checks: false
