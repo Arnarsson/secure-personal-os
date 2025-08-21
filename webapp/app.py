@@ -69,14 +69,14 @@ def create_app() -> FastAPI:
     app.state.web_token = configured_token
 
     def _require_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-        """Simple bearer token check via Authorization header or cookie fallback."""
+        """Simple bearer token check via Authorization header (Bearer)."""
         expected = app.state.web_token
         token_ok = False
-        # Authorization: Bearer <token>
-        if credentials and credentials.scheme.lower() == "bearer":
+        if credentials and credentials.scheme and credentials.scheme.lower() == "bearer":
             token_ok = (credentials.credentials == expected)
-        # Cookie fallback
-        return token_ok or False
+        if not token_ok:
+            raise HTTPException(status_code=401, detail="unauthorized")
+        return True
 
     # Single orchestrator instance per process
     app.state.secure_os = SecurePersonalOS()
