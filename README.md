@@ -45,6 +45,14 @@ npx vercel --prod                    # optional: production deploy
 
 Serverless entrypoint for Vercel lives at `api/index.py` and routes all paths to the FastAPI `app`.
 
+Notes:
+- Ensure this repository/branch (with `api/index.py` and `vercel.json`) is connected in Vercel.
+- Add secrets in the Vercel Project Settings for GitHub Actions (if using the workflow): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- Python runtime is configured to `python3.11` via `vercel.json`. Dependencies are taken from the root `requirements.txt`.
+
+MCP/Auth env:
+- `PERSONAL_OS_MCP_TOKEN` – optional token gate for MCP server; if set, call `personal_os_login` with this token before other tools.
+
 ## 🏗️ Architecture
 
 ```
