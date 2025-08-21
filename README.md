@@ -30,6 +30,19 @@ Environment overrides (examples):
 - `PERSONAL_OS_WEB_HOST`, `PERSONAL_OS_WEB_PORT` – web bind
 - `PERSONAL_OS_PERMISSIONS`, `PERSONAL_OS_VAULT`, `PERSONAL_OS_AUDIT_LOG` – paths
 
+### Deploy (Vercel Preview)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Arnarsson/secure-personal-os)
+
+CLI (requires Vercel CLI):
+
+```
+npx vercel                           # first-time: link project, creates preview URL
+npx vercel --prod                    # optional: production deploy
+```
+
+Serverless entrypoint for Vercel lives at `api/index.py` and routes all paths to the FastAPI `app`.
+
 ## 🏗️ Architecture
 
 ```
