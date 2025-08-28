@@ -63,7 +63,7 @@ class CalendarService:
             # Get today's events from the calendar interface
             success, message, content = await self.browser.perform_action(
                 'get_content',
-                selector='[role="gridcell"][data-date], .YeIZSe, [data-eventchip]'
+                selector='[role="button"][data-eventid], [role="gridcell"] [role="button"], .NlL62b'  # Event elements
             )
             
             events = []
@@ -152,7 +152,7 @@ class CalendarService:
             # Click create/add event button
             success, message, _ = await self.browser.perform_action(
                 'click',
-                selector='[aria-label*="Create"], .RveJvd, [data-action="create"]'
+                selector='[aria-label*="Create"], button[jsname="VjFXz"], .XHsn7e'  # Create event button
             )
             if not success:
                 return False, f"Failed to open create event dialog: {message}"
@@ -170,7 +170,7 @@ class CalendarService:
             title = event_data.get('title', 'New Event')
             success, message, _ = await self.browser.perform_action(
                 'type',
-                selector='[data-label="Title"], input[placeholder*="Add title"]',
+                selector='input[aria-label="Title"], input[placeholder*="Add title"], .whsOnd',
                 text=title
             )
             if not success:
@@ -208,7 +208,7 @@ class CalendarService:
             # Save the event
             success, message, _ = await self.browser.perform_action(
                 'click',
-                selector='[aria-label*="Save"], .RveJvd[data-action="save"]'
+                selector='[aria-label="Save"], button[jsname="x8hlje"], span:has-text("Save")'
             )
             
             if success:
@@ -318,7 +318,7 @@ class CalendarService:
             # Click "Today" button
             success, message, _ = await self.browser.perform_action(
                 'click',
-                selector='[aria-label*="Today"], .RveJvd[data-action="today"]'
+                selector='[aria-label="Today"], button:has-text("Today"), .VfPpkd-vQzf8d:has-text("Today")'
             )
             return success
         except:

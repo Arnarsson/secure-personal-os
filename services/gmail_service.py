@@ -52,18 +52,26 @@ class GmailService:
                 return False, 0
             
             # Look for unread count in Gmail interface
-            success, message, content = await self.browser.perform_action(
-                'get_content',
-                selector='[aria-label*="unread"]'
-            )
+            # Try multiple selectors for unread count
+            selectors = [
+                '.bsU',  # Unread count badge
+                '[aria-label*="unread"]',
+                '.aio .a9b',  # Inbox unread indicator
+            ]
             
-            if success and content:
-                # Extract number from content
-                numbers = re.findall(r'\d+', content)
-                if numbers:
-                    unread_count = int(numbers[0])
-                    self.logger.info(f"Found {unread_count} unread emails")
-                    return True, unread_count
+            for selector in selectors:
+                success, message, content = await self.browser.perform_action(
+                    'get_content',
+                    selector=selector
+                )
+                
+                if success and content:
+                    # Extract number from content
+                    numbers = re.findall(r'\d+', content)
+                    if numbers:
+                        unread_count = int(numbers[0])
+                        self.logger.info(f"Found {unread_count} unread emails")
+                        return True, unread_count
             
             return True, 0
             
@@ -89,10 +97,10 @@ class GmailService:
             if self.current_folder != "inbox":
                 await self._navigate_to_folder("inbox")
             
-            # Get email list elements
+            # Get email list elements - Gmail uses table rows for emails
             success, message, content = await self.browser.perform_action(
                 'get_content',
-                selector='[role="main"] tr'
+                selector='tr.zA, [role="row"][jsaction*="click"]'  # Email rows in Gmail
             )
             
             if success and content:
@@ -136,10 +144,10 @@ class GmailService:
             if not allowed:
                 return False, reason
             
-            # Click compose button
+            # Click compose button - Gmail compose button
             success, message, _ = await self.browser.perform_action(
                 'click',
-                selector='[role="button"][aria-label*="Compose"], .T-I-KE'
+                selector='[gh="cm"], div[role="button"]:has-text("Compose"), .T-I.T-I-KE'  # Updated compose selectors
             )
             if not success:
                 return False, f"Failed to open compose: {message}"
@@ -147,7 +155,7 @@ class GmailService:
             # Wait for compose dialog
             success, message, _ = await self.browser.perform_action(
                 'wait_for',
-                condition='[name="to"]',
+                condition='[name="to"], [aria-label*="To"], .vO',  # Recipients field
                 timeout=5000
             )
             if not success:
@@ -156,7 +164,7 @@ class GmailService:
             # Fill in recipient
             success, message, _ = await self.browser.perform_action(
                 'type',
-                selector='[name="to"]',
+                selector='[name="to"], [aria-label*="To"], .vO',  # Updated recipient field
                 text=to
             )
             if not success:
@@ -165,7 +173,7 @@ class GmailService:
             # Fill in subject
             success, message, _ = await self.browser.perform_action(
                 'type',
-                selector='[name="subjectbox"]',
+                selector='[name="subjectbox"], [aria-label="Subject"], .aoT',  # Updated subject field
                 text=subject
             )
             if not success:
@@ -174,7 +182,7 @@ class GmailService:
             # Fill in body
             success, message, _ = await self.browser.perform_action(
                 'type',
-                selector='[role="textbox"][aria-label*="Message Body"]',
+                selector='[role="textbox"][aria-label*="Message Body"], .Am, div[contenteditable="true"]',  # Message body area
                 text=body
             )
             if not success:
@@ -201,7 +209,7 @@ class GmailService:
             # Send email
             success, message, _ = await self.browser.perform_action(
                 'click',
-                selector='[role="button"][aria-label*="Send"], .T-I-KE'
+                selector='[aria-label*="Send"], .T-I.T-I-atl, div[role="button"]:has-text("Send")'  # Send button
             )
             
             if success:
