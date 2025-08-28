@@ -35,11 +35,15 @@ Environment overrides (examples):
 
 ### Deploy (Vercel Preview)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Arnarsson/secure-personal-os)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Arnarsson/secure-personal-os&env=PERSONAL_OS_WEB_TOKEN&envDescription=Security%20token%20for%20API%20access&envLink=https://github.com/Arnarsson/secure-personal-os&project-name=secure-personal-os&repository-name=secure-personal-os)
 
 CLI (requires Vercel CLI):
 
-```
+```bash
+# First time setup:
+./setup_vercel.sh                    # Interactive setup script
+
+# Or manually:
 npx vercel                           # first-time: link project, creates preview URL
 npx vercel --prod                    # optional: production deploy
 ```
